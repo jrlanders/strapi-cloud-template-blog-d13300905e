@@ -1,12 +1,12 @@
 'use strict';
 
-const { Pinecone } = require('@pinecone-database/pinecone');
+const { PineconeClient } = require('@pinecone-database/pinecone'); // ✅ use PineconeClient
 const axios = require('axios');
 
 let pineconeClient;
 
 async function initPinecone() {
-  const pinecone = new Pinecone();
+  const pinecone = new PineconeClient(); // ✅ correct instantiation
   await pinecone.init({
     apiKey: process.env.PINECONE_API_KEY,
     environment: process.env.PINECONE_ENV,
