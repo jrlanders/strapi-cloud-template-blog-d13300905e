@@ -1,15 +1,25 @@
 'use strict';
 
 const { Pinecone } = require('@pinecone-database/pinecone');
-require('dotenv').config(); // if you're using a .env file
 const axios = require('axios');
 
-async function getPineconeClient() {
-  const pinecone = await Pinecone.fromEnvironment(); // uses env vars automatically
-  return pinecone;
+let pineconeClient;
+
+async function initPinecone() {
+  const pinecone = new Pinecone();
+  await pinecone.init({
+    apiKey: process.env.PINECONE_API_KEY,
+    environment: process.env.PINECONE_ENVIRONMENT,
+  });
+  pineconeClient = pinecone;
 }
 
-const index = pinecone.Index(process.env.PINECONE_INDEX);
+async function getPineconeClient() {
+  if (!pineconeClient) {
+    await initPinecone();
+  }
+  return pineconeClient;
+}
 
 async function getEmbedding(text) {
   const res = await axios.post(
@@ -38,6 +48,8 @@ module.exports = {
     }
 
     const embedding = await getEmbedding(text);
+    const pinecone = await getPineconeClient();
+    const index = pinecone.index(process.env.PINECONE_INDEX); // create here safely
 
     await index.upsert([
       {
@@ -64,6 +76,8 @@ module.exports = {
     }
 
     const embedding = await getEmbedding(query);
+    const pinecone = await getPineconeClient();
+    const index = pinecone.index(process.env.PINECONE_INDEX);
 
     const result = await index.query({
       vector: embedding,
@@ -72,7 +86,7 @@ module.exports = {
       filter: project ? { project } : undefined,
     });
 
-    const matches = result.matches?.map(m => m.metadata) || [];
+    const matches = result.matches?.map((m) => m.metadata) || [];
     ctx.send({ results: matches });
   },
 };
