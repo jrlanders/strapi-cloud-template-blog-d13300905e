@@ -1,18 +1,15 @@
 'use strict';
 
-const { Pinecone } = require('@pinecone-database/pinecone'); // ✅ CORRECT for v0.2.2+
+const { Pinecone } = require('@pinecone-database/pinecone'); // ← ✅ CORRECT for v0.2.2
 const axios = require('axios');
 
-let pinecone;
+let pineconeClient;
 
-async function getPineconeClient() {
-  if (!pinecone) {
-    pinecone = new Pinecone({
-      apiKey: process.env.PINECONE_API_KEY,
-      environment: process.env.PINECONE_ENV,
-    });
-  }
-  return pinecone;
+async function initPinecone() {
+  pineconeClient = new Pinecone({
+    apiKey: process.env.PINECONE_API_KEY,
+    environment: process.env.PINECONE_ENV,
+  });
 }
 
 async function getEmbedding(text) {
