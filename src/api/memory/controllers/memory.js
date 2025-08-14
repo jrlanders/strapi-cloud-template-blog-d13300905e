@@ -1,27 +1,20 @@
 'use strict';
 
-const { PineconeClient } = require('@pinecone-database/pinecone'); // ✅ use PineconeClient
+const { Pinecone } = require('@pinecone-database/pinecone'); // ✅ CORRECT for v0.2.2+
 const axios = require('axios');
 
-let pineconeClient;
-
-async function initPinecone() {
-  const pinecone = new PineconeClient(); // ✅ correct instantiation
-  await pinecone.init({
-    apiKey: process.env.PINECONE_API_KEY,
-    environment: process.env.PINECONE_ENV,
-  });
-  pineconeClient = pinecone;
-}
+let pinecone;
 
 async function getPineconeClient() {
-  if (!pineconeClient) {
-    await initPinecone();
+  if (!pinecone) {
+    pinecone = new Pinecone({
+      apiKey: process.env.PINECONE_API_KEY,
+      environment: process.env.PINECONE_ENV,
+    });
   }
-  return pineconeClient;
+  return pinecone;
 }
 
-// ✅ EMBEDDING FUNCTION – Make sure this is declared before usage
 async function getEmbedding(text) {
   const res = await axios.post(
     'https://api.openai.com/v1/embeddings',
@@ -50,8 +43,8 @@ module.exports = {
       }
 
       const embedding = await getEmbedding(text);
-      const pinecone = await getPineconeClient();
-      const index = pinecone.index(process.env.PINECONE_INDEX);
+      const pineconeClient = await getPineconeClient();
+      const index = pineconeClient.index(process.env.PINECONE_INDEX);
 
       await index.upsert([
         {
@@ -87,8 +80,8 @@ module.exports = {
       }
 
       const embedding = await getEmbedding(query);
-      const pinecone = await getPineconeClient();
-      const index = pinecone.index(process.env.PINECONE_INDEX);
+      const pineconeClient = await getPineconeClient();
+      const index = pineconeClient.index(process.env.PINECONE_INDEX);
 
       const result = await index.query({
         vector: embedding,
