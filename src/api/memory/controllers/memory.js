@@ -40,32 +40,42 @@ async function getEmbedding(text) {
 
 module.exports = {
   async store(ctx) {
-    const { text, project, type, title } = ctx.request.body;
-
-    if (!text || !project) {
-      ctx.badRequest("Missing 'text' or 'project' in body");
-      return;
-    }
-
-    const embedding = await getEmbedding(text);
-    const pinecone = await getPineconeClient();
-    const index = pinecone.index(process.env.PINECONE_INDEX); // create here safely
-
-    await index.upsert([
-      {
-        id: `mem-${Date.now()}`,
-        values: embedding,
-        metadata: {
-          project,
-          type: type || 'note',
-          title: title || '',
-          text,
+    try {
+      const { text, project, type, title } = ctx.request.body;
+  
+      if (!text || !project) {
+        ctx.badRequest("Missing 'text' or 'project' in body");
+        return;
+      }
+  
+      const embedding = await getEmbedding(text);
+      const pinecone = await getPineconeClient();
+      const index = pinecone.index(process.env.PINECONE_INDEX);
+  
+      await index.upsert([
+        {
+          id: `mem-${Date.now()}`,
+          values: embedding,
+          metadata: {
+            project,
+            type: type || 'note',
+            title: title || '',
+            text,
+          },
         },
-      },
-    ]);
-
-    ctx.send({ status: 'stored', project, title });
-  },
+      ]);
+  
+      ctx.send({ status: 'stored', project, title });
+  
+    } catch (error) {
+      console.error('Memory Store Error:', error);
+      ctx.status = 500;
+      ctx.body = {
+        error: 'Internal server error',
+        details: error.message,
+      };
+    }
+  }
 
   async recall(ctx) {
     const { query, project } = ctx.request.body;
