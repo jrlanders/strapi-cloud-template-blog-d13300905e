@@ -1,12 +1,13 @@
 'use strict';
 
 const { Pinecone } = require('@pinecone-database/pinecone');
+require('dotenv').config(); // if you're using a .env file
 const axios = require('axios');
 
-const pinecone = new Pinecone({
-  apiKey: process.env.PINECONE_API_KEY,
-  environment: process.env.PINECONE_ENV,
-});
+async function getPineconeClient() {
+  const pinecone = await Pinecone.fromEnvironment(); // uses env vars automatically
+  return pinecone;
+}
 
 const index = pinecone.Index(process.env.PINECONE_INDEX);
 
