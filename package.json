@@ -22,6 +22,8 @@
     "react-dom": "^18.0.0",
     "react-router-dom": "^6.0.0",
     "styled-components": "^6.0.0"
+    "axios": "^1.6.8",
+    "@pinecone-database/pinecone": "^0.2.2"
   },
   "devDependencies": {},
   "engines": {
