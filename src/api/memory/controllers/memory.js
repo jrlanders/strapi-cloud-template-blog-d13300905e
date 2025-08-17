@@ -1,30 +1,35 @@
 'use strict';
 
-const { Pinecone } = require('@pinecone-database/pinecone');
+const { Pinecone } = require('@pinecone-database/pinecone'); // v0.2.2 client
 const axios = require('axios');
 
-// Setup client instance (one-time)
-const pinecone = new Pinecone({
-  apiKey: process.env.PINECONE_API_KEY,
-  environment: process.env.PINECONE_ENV, // Example: 'us-east-1'
-});
+let pineconeClient;
 
-// ✅ EMBEDDING FUNCTION
+async function initPinecone() {
+  if (!pineconeClient) {
+    pineconeClient = new Pinecone();
+  }
+
+  return pineconeClient;
+}
+
+// 🧠 Embedding function using Together AI's LLaMA v2
 async function getEmbedding(text) {
-  const res = await axios.post(
-    'https://api.openai.com/v1/embeddings',
+  const response = await axios.post(
+    'https://api.together.xyz/v1/embeddings',
     {
-      input: text,
-      model: 'text-embedding-ada-002',
+      model: 'togethercomputer/llama-2-7b-chat',
+      input: [text],
     },
     {
       headers: {
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        Authorization: `Bearer ${process.env.TOGETHER_API_KEY}`,
+        'Content-Type': 'application/json',
       },
     }
   );
 
-  return res.data.data[0].embedding;
+  return response.data.data[0].embedding;
 }
 
 module.exports = {
@@ -38,6 +43,7 @@ module.exports = {
       }
 
       const embedding = await getEmbedding(text);
+      const pinecone = await initPinecone();
       const index = pinecone.index(process.env.PINECONE_INDEX);
 
       await index.upsert([
@@ -53,7 +59,7 @@ module.exports = {
         },
       ]);
 
-      ctx.send({ status: 'stored', project, title });
+      ctx.send({ status: 'stored', project, title: title || '' });
     } catch (error) {
       console.error('Memory Store Error:', error);
       ctx.status = 500;
@@ -74,6 +80,7 @@ module.exports = {
       }
 
       const embedding = await getEmbedding(query);
+      const pinecone = await initPinecone();
       const index = pinecone.index(process.env.PINECONE_INDEX);
 
       const result = await index.query({
@@ -93,5 +100,5 @@ module.exports = {
         details: error.message,
       };
     }
-  }
+  },
 };
